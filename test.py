@@ -52,7 +52,6 @@ def Search():
         iurl = it.find("div", class_="title").a.get('href').encode('utf-8')
         movieurl = '%s%s' % (ZIMUKU_BASE, iurl)
         try:
-            print(movieurl)
             socket = urllib.urlopen(movieurl)
             data = socket.read()
             socket.close()
@@ -63,11 +62,8 @@ def Search():
         subs = soup.find_all("tr")
         for sub in subs:
             name = sub.a.text.encode('utf-8')
-            imgs = sub.find_all('img')
             flag = sub.img.get('src').split('/')[-1].split('.')[0].encode('utf-8')
             lang = FLAG_DICT.get(flag,'unkonw')
-
-            for img in imgs: flags.append(img.get('src').split('/')[-1].split('.')[0].encode('utf-8'))
             link = '%s%s' % (ZIMUKU_BASE, sub.a.get('href').encode('utf-8'))
 
             if lang == '英':
@@ -106,8 +102,8 @@ def Download():
         data = socket.read()
         soup = BeautifulSoup(data,'html.parser')
         url = soup.find("li", class_="li dlsub").a.get('href').encode('utf-8')
-        socket = urllib.urlopen(url)
 
+        socket = urllib.urlopen(url)
         data = socket.read()
         soup = BeautifulSoup(data,'html.parser')
         div = soup.find('div',class_='down clearfix')

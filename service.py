@@ -25,6 +25,13 @@ __temp__       = xbmc.translatePath( os.path.join( __profile__, 'temp') ).decode
 
 sys.path.append (__resource__)
 
+headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+           'Accept-Encoding': 'gzip, deflate, sdch, br',
+           'Accept-Language': 'zh-CN,zh;q=0.8',
+           'Connection': 'keep-alive',
+           'Upgrade-Insecure-Requests': '1',
+           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'}
+
 ZIMUKU_API = 'http://www.zimuku.net/search?q=%s'
 ZIMUKU_BASE = 'http://www.zimuku.net'
 FLAG_DICT = {'china':'简', 'hongkong':'繁', 'uk':'英', 'jollyroger':'双语'}
@@ -47,27 +54,29 @@ def Search( item ):
         socket = urllib.urlopen(url)
         data = socket.read()
         socket.close()
-        soup = BeautifulSoup(data)
+        soup = BeautifulSoup(data,'html.parser')
     except:
         return
-    results = soup.find_all("div", class_="item clearfix")
+    results = soup.find_all("div", class_="item prel clearfix")
     for it in results:
         moviename = it.find("div", class_="title").a.text.encode('utf-8')
-        movieurl = '%s%s' % (ZIMUKU_BASE, it.find("div", class_="title").a.get('href').encode('utf-8'))
+        iurl = it.find("div", class_="title").a.get('href').encode('utf-8')
+        movieurl = '%s%s' % (ZIMUKU_BASE, iurl)
         try:
             socket = urllib.urlopen(movieurl)
             data = socket.read()
             socket.close()
-            soup = BeautifulSoup(data).find("div", class_="sublist")
+            soup = BeautifulSoup(data,'html.parser').find("table", class_="table")
+            soup = soup.find("tbody")
         except:
             return
         subs = soup.find_all("tr")
         for sub in subs:
-            version = sub.a.text.encode('utf-8')
+            name = sub.a.text.encode('utf-8')
             flag = sub.img.get('src').split('/')[-1].split('.')[0].encode('utf-8')
-            lang = FLAG_DICT[flag]
+            lang = FLAG_DICT.get(flag,'unkonw')
             link = '%s%s' % (ZIMUKU_BASE, sub.a.get('href').encode('utf-8'))
-            name = '%s (%s)' % (version, lang)
+
             if lang == '英':
                 subtitles_list.append({"language_name":"English", "filename":name, "link":link, "language_flag":'en', "rating":"0", "lang":lang})
             else:
@@ -101,21 +110,27 @@ def Download(url,lang):
     try:
         socket = urllib.urlopen( url )
         data = socket.read()
-        soup = BeautifulSoup(data)
-        url = '%s%s' % (ZIMUKU_BASE, soup.find("li", class_="dlsub").a.get('href').encode('utf-8'))
-        socket = urllib.urlopen( url )
-        filename = socket.headers['Content-Disposition'].split('filename=')[1]
-        if filename[0] == '"' or filename[0] == "'":  
-            filename = filename[1:-1]  
+        soup = BeautifulSoup(data,'html.parser')
+        url = soup.find("li", class_="li dlsub").a.get('href').encode('utf-8')
+        socket = urllib.urlopen(url)
+
+        socket = urllib.urlopen(url)
+        data = socket.read()
+        soup = BeautifulSoup(data,'html.parser')
+        div = soup.find('div',class_='down clearfix')
+        li = div.find('li')
+        headers['Referer'] = url
+
+        req = urllib2.Request(li.a.get('href'),headers=headers)
+        resp = urllib2.urlopen(req)
+        socket = urllib.urlopen(resp.geturl())
         data = socket.read()
         socket.close()
     except:
         return []
-    if len(data) < 1024:
-        return []
-    tempfile = os.path.join(__temp__, "subtitles%s" % os.path.splitext(filename)[1])
-    with open(tempfile, "wb") as subFile:
-        subFile.write(data)
+    if len(data) < 1024: return []
+    tempfile = os.path.join(__temp__, "subtitles.zip")
+    with open(tempfile, "wb") as subFile: subFile.write(data)
     subFile.close()
     xbmc.sleep(500)
     if data[:4] == 'Rar!' or data[:2] == 'PK':
