@@ -42,6 +42,32 @@ def log(module, msg):
 def normalizeString(str):
     return str
 
+def getFileList(path):
+    fileslist = []
+    for d in os.listdir(path):
+        if os.path.isdir(path+d):
+            fileslist.extend(getFileList(path+d+'/'))
+        if os.path.isfile(path+d):
+            fileslist.append(path+d)
+    return fileslist
+
+def unZip(filepath):
+    path  = __temp__ + '/subtitles/'
+    if os.path.isdir(path): shutil.rmtree(path)
+    if not os.path.isdir(path): os.mkdir(path)
+
+    zip_file = zipfile.ZipFile(filepath,'r')
+    for names in zip_file.namelist():
+        if type(names) == str and names[-1] != '/':
+            utf8name = names.decode('gbk')
+            data = zip_file.read(names)
+            fo = open(path+utf8name, "w")
+            fo.write(data)
+            fo.close()
+        else:
+            zip_file.extract(names,path)
+    return getFileList(path)
+
 def Search( item ):
     subtitles_list = []
 
@@ -220,6 +246,7 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
 elif params['action'] == 'download':
     subs = Download(params["link"], params["lang"])
     for sub in subs:
+        log("zimuku.Download_subtitles", "Subtitles Download Successfully From: %s." % params['link'])
         listitem = xbmcgui.ListItem(label=sub)
         xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=sub,listitem=listitem,isFolder=False)
 
