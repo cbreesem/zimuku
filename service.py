@@ -5,6 +5,8 @@ import os
 import sys
 import xbmc
 import urllib
+import urllib2
+import zipfile
 import shutil
 import xbmcvfs
 import xbmcaddon
@@ -52,21 +54,18 @@ def getFileList(path):
     return fileslist
 
 def unZip(filepath):
-    path  = __temp__ + '/subtitles/'
-    if os.path.isdir(path): shutil.rmtree(path)
-    if not os.path.isdir(path): os.mkdir(path)
 
     zip_file = zipfile.ZipFile(filepath,'r')
     for names in zip_file.namelist():
         if type(names) == str and names[-1] != '/':
             utf8name = names.decode('gbk')
             data = zip_file.read(names)
-            fo = open(path+utf8name, "w")
+            fo = open(os.path.join(__temp__, utf8name), "w")
             fo.write(data)
             fo.close()
         else:
-            zip_file.extract(names,path)
-    return getFileList(path)
+            zip_file.extract(names,__temp__)
+    return getFileList(__temp__+'/')
 
 def Search( item ):
     subtitles_list = []
@@ -99,6 +98,7 @@ def Search( item ):
         subs = soup.find_all("tr")
         for sub in subs:
             name = sub.a.text.encode('utf-8')
+            if name.split('.')[-1] not in ['zip','Zip','ZIP']: continue
             flag = sub.img.get('src').split('/')[-1].split('.')[0].encode('utf-8')
             lang = FLAG_DICT.get(flag,'unkonw')
             link = '%s%s' % (ZIMUKU_BASE, sub.a.get('href').encode('utf-8'))
@@ -131,7 +131,6 @@ def Download(url,lang):
     try: os.makedirs(__temp__)
     except: pass
 
-    subtitle_list = []
     exts = [".srt", ".sub", ".smi", ".ssa", ".ass" ]
     try:
         socket = urllib.urlopen( url )
@@ -156,29 +155,20 @@ def Download(url,lang):
         return []
     if len(data) < 1024: return []
     tempfile = os.path.join(__temp__, "subtitles.zip")
+    xbmc.log(tempfile)
     with open(tempfile, "wb") as subFile: subFile.write(data)
     subFile.close()
     xbmc.sleep(500)
-    if data[:4] == 'Rar!' or data[:2] == 'PK':
-        xbmc.executebuiltin(('XBMC.Extract("%s","%s")' % (tempfile,__temp__,)).encode('utf-8'), True)
-    path = __temp__
-    dirs, files = xbmcvfs.listdir(path)
-    if len(dirs) > 0:
-        path = os.path.join(__temp__, dirs[0].decode('utf-8'))
-        dirs, files = xbmcvfs.listdir(path)
-    list = []
-    for subfile in files:
-        if (os.path.splitext( subfile )[1] in exts):
-            list.append(subfile.decode('utf-8'))
-    if len(list) == 1:
-        subtitle_list.append(os.path.join(path, list[0]))
-    else:
-        sel = xbmcgui.Dialog().select('请选择压缩包中的字幕', list)
-        if sel == -1:
-            sel = 0
-        subtitle_list.append(os.path.join(path, list[sel]))
+    lists = unZip(tempfile)
+    lists = [i for i in lists if os.path.splitext(i)[1] in exts]
 
-    return subtitle_list
+    if len(lists) == 1:
+        return lists[0]
+    else:
+        index = [i.split('/')[-1] for i in lists]
+        sel = xbmcgui.Dialog().select('请选择压缩包中的字幕', index)
+        if sel == -1: sel = 0
+        return lists[sel]
 
 def get_params():
     param=[]
@@ -244,10 +234,8 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
     Search(item)
 
 elif params['action'] == 'download':
-    subs = Download(params["link"], params["lang"])
-    for sub in subs:
-        log("zimuku.Download_subtitles", "Subtitles Download Successfully From: %s." % params['link'])
-        listitem = xbmcgui.ListItem(label=sub)
-        xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=sub,listitem=listitem,isFolder=False)
+    sub = Download(params["link"], params["lang"])
+    listitem = xbmcgui.ListItem(label=sub.encode('utf-8'))
+    xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=sub,listitem=listitem,isFolder=False)
 
 xbmcplugin.endOfDirectory(int(sys.argv[1]))

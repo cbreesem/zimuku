@@ -18,7 +18,6 @@ import shutil
 # import xbmcgui,xbmcplugin
 from bs4 import BeautifulSoup
 
-from utils import *
 
 
 
@@ -205,6 +204,8 @@ def Download(url):
 
 
 # unZip()
-url = Search()
-Download(url[0]['link'])
+# url = Search()
+# Download(url[0]['link'])
+
+print os.path.join( __temp__, 'temp')
 
