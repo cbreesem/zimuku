@@ -34,8 +34,8 @@ headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,imag
 
 
 
-ZIMUKU_API = 'http://www.zimuku.net/search?q=%s'
-ZIMUKU_BASE = 'http://www.zimuku.net'
+ZIMUKU_API = 'http://www.zimuku.cn/search?q=%s'
+ZIMUKU_BASE = 'http://www.zimuku.cn'
 FLAG_DICT = {'china':'简', 'hongkong':'繁', 'uk':'英', 'jollyroger':'双语'}
 exts = [".srt", ".sub", ".smi", ".ssa", ".ass" ]
 
@@ -75,7 +75,7 @@ def Search():
     # if item['mansearch']:
     #     url = ZIMUKU_API % '最终幻想15：王者之剑'
     # else:
-    url = ZIMUKU_API % '终结者.创世纪'
+    url = ZIMUKU_API % 'the croods'
     # url = ZIMUKU_API % '最终幻想15：王者之剑'
     try:
         socket = urllib.urlopen(url)
@@ -98,10 +98,25 @@ def Search():
         except:
             return
         subs = soup.find_all("tr")
+        # print(subs)
         for sub in subs:
-            name = sub.a.text.encode('utf-8')
 
-            if name.split('.')[-1] not in ['zip','Zip','ZIP']: continue
+            name = sub.a.text.encode('utf-8')
+            ext = name.split('.')[-1].lower()
+
+            exts = sub.find_all('span', class_='label label-info')
+
+            if ext not in ['zip','ass','srt','ssa']: continue
+
+
+
+            if(len(exts) > 0):
+                exts = exts[0].getText() if len(exts) == 1 else [i.getText() for i in exts]
+
+            print(exts)
+            print(name.split('.')[-1])
+
+            if name.split('.')[-1] not in ['zip','ass','srt','ssa']: continue
 
             flag = sub.img.get('src').split('/')[-1].split('.')[0].encode('utf-8')
             lang = FLAG_DICT.get(flag,'unkonw')
@@ -204,8 +219,9 @@ def Download(url):
 
 
 # unZip()
-# url = Search()
+url = Search()
+# print(url)
 # Download(url[0]['link'])
 
-print os.path.join( __temp__, 'temp')
+# print os.path.join( __temp__, 'temp')
 
