@@ -55,17 +55,31 @@ def unZip(filepath):
     if os.path.isdir(path): shutil.rmtree(path)
     if not os.path.isdir(path): os.mkdir(path)
 
-    zip_file = zipfile.ZipFile(filepath,'r')
-    for names in zip_file.namelist():
-        if type(names) == str and names[-1] != '/':
-            utf8name = names.decode('gbk')
-            data = zip_file.read(names)
-            fo = open(path+utf8name, "w")
-            fo.write(data)
-            fo.close()
-        else:
-            zip_file.extract(names,path)
-    return getFileList(path)
+    if filepath.lower().endswith('zip'):
+        zip_file = zipfile.ZipFile(filepath,'r')
+        for names in zip_file.namelist():
+            if type(names) == str and names[-1] != '/':
+                utf8name = names.decode('gbk')
+                data = zip_file.read(names)
+                fo = open(path+utf8name, "w")
+                fo.write(data)
+                fo.close()
+            else:
+                zip_file.extract(names,path)
+        return getFileList(path)
+    if filepath.lower().endswith('rar'):
+        zip_file = zipfile.ZipFile(filepath,'r')
+        for names in zip_file.namelist():
+            if type(names) == str and names[-1] != '/':
+                utf8name = names.decode('gbk')
+                data = zip_file.read(names)
+                fo = open(path+utf8name, "w")
+                fo.write(data)
+                fo.close()
+            else:
+                zip_file.extract(names,path)
+        return getFileList(path)
+
 
 
 def Search():
@@ -102,21 +116,6 @@ def Search():
         for sub in subs:
 
             name = sub.a.text.encode('utf-8')
-            ext = name.split('.')[-1].lower()
-
-            exts = sub.find_all('span', class_='label label-info')
-
-            if ext not in ['zip','ass','srt','ssa']: continue
-
-
-
-            if(len(exts) > 0):
-                exts = exts[0].getText() if len(exts) == 1 else [i.getText() for i in exts]
-
-            print(exts)
-            print(name.split('.')[-1])
-
-            if name.split('.')[-1] not in ['zip','ass','srt','ssa']: continue
 
             flag = sub.img.get('src').split('/')[-1].split('.')[0].encode('utf-8')
             lang = FLAG_DICT.get(flag,'unkonw')
@@ -178,6 +177,10 @@ def Download(url):
 
         req = urllib2.Request(li.a.get('href'),headers=headers)
         resp = urllib2.urlopen(req)
+
+        print(resp.headers['Content-Disposition'].replace('"','').split('=')[1])
+        print(resp.geturl())
+
         socket = urllib.urlopen(resp.geturl())
         data = socket.read()
         socket.close()
@@ -197,7 +200,7 @@ def Download(url):
 
 
 
-    return
+    return lists
     path = __temp__
     dirs, files = xbmcvfs.listdir(path)
     if len(dirs) > 0:
@@ -219,9 +222,10 @@ def Download(url):
 
 
 # unZip()
-url = Search()
+# url = Search()
 # print(url)
 # Download(url[0]['link'])
+Download('http://www.zimuku.cn/detail/71607.html')
 
 # print os.path.join( __temp__, 'temp')
 

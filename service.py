@@ -98,16 +98,14 @@ def Search( item ):
         subs = soup.find_all("tr")
         for sub in subs:
             name = sub.a.text.encode('utf-8')
-            ext = name.split('.')[-1].lower()
-            if ext not in ['zip','ass','srt','ssa']: continue
             flag = sub.img.get('src').split('/')[-1].split('.')[0].encode('utf-8')
             lang = FLAG_DICT.get(flag,'unkonw')
             link = '%s%s' % (ZIMUKU_BASE, sub.a.get('href').encode('utf-8'))
 
             if lang == '英':
-                subtitles_list.append({"language_name":"English", "filename":name, "link":link, "language_flag":'en', "rating":"0", "lang":lang,'ext':ext})
+                subtitles_list.append({"language_name":"English", "filename":name, "link":link, "language_flag":'en', "rating":"0", "lang":lang})
             else:
-                subtitles_list.append({"language_name":"Chinese", "filename":name, "link":link, "language_flag":'zh', "rating":"0", "lang":lang,'ext':ext})
+                subtitles_list.append({"language_name":"Chinese", "filename":name, "link":link, "language_flag":'zh', "rating":"0", "lang":lang})
 
     if subtitles_list:
         for it in subtitles_list:
@@ -120,14 +118,13 @@ def Search( item ):
             listitem.setProperty( "sync", "false" )
             listitem.setProperty( "hearing_imp", "false" )
 
-            url = "plugin://%s/?action=download&link=%s&lang=%s&ext=%s" % (__scriptid__,
+            url = "plugin://%s/?action=download&link=%s&lang=%s" % (__scriptid__,
                                                                         it["link"],
-                                                                        it["lang"],
-                                                                        it['ext']
+                                                                        it["lang"]
                                                                         )
             xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listitem,isFolder=False)
 
-def Download(url,lang,ext):
+def Download(url,lang):
     try: shutil.rmtree(__temp__)
     except: pass
     try: os.makedirs(__temp__)
@@ -150,17 +147,24 @@ def Download(url,lang,ext):
 
         req = urllib2.Request(li.a.get('href'),headers=headers)
         resp = urllib2.urlopen(req)
+        fileName = resp.headers['Content-Disposition'].replace('"','').split('=')[1]
+
         socket = urllib.urlopen(resp.geturl())
         data = socket.read()
         socket.close()
     except:
         return []
     if len(data) < 1024: return []
-    tempfile = os.path.join(__temp__, "subtitles.zip") if ext.lower() == 'zip' else os.path.join(__temp__, "subtitles."+ext)
+    tempfile = os.path.join(__temp__, "subtitles.%s" % fileName.split('.')[-1])
     xbmc.log(tempfile)
     with open(tempfile, "wb") as subFile: subFile.write(data)
     xbmc.sleep(100)
-    lists = unZip(tempfile) if ext.lower() == 'zip' else [os.path.join(__temp__, "subtitles."+ext)]
+    if fileName.split('.')[-1].lower() in ('zip','rar'):
+        xbmc.executebuiltin(('XBMC.Extract("%s","%s")' % (tempfile,__temp__,)).encode('utf-8'), True)
+        lists = getFileList(__temp__+'/subtitles/')
+    else:
+        lists = [tempfile]
+
     lists = [i for i in lists if os.path.splitext(i)[1] in exts]
 
     if len(lists) == 1:
