@@ -34,8 +34,8 @@ headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,imag
            'Upgrade-Insecure-Requests': '1',
            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'}
 
-ZIMUKU_API = 'http://www.zimuku.net/search?q=%s'
-ZIMUKU_BASE = 'http://www.zimuku.net'
+ZIMUKU_API = 'http://www.zimuku.cn/search?q=%s'
+ZIMUKU_BASE = 'http://www.zimuku.cn'
 FLAG_DICT = {'china':'简', 'hongkong':'繁', 'uk':'英', 'jollyroger':'双语'}
 
 def log(module, msg):
@@ -70,7 +70,7 @@ def unZip(filepath):
 def Search( item ):
     subtitles_list = []
 
-    log( __name__ ,"Search for [%s] by name" % (os.path.basename( item['file_original_path'] ),))
+    log(__name__ ,"Search for [%s] by name" % os.path.basename(item['file_original_path']))
     if item['mansearch']:
         url = ZIMUKU_API % (item['mansearchstr'])
     else:
