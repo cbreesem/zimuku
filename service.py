@@ -239,7 +239,7 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
     Search(item)
 
 elif params['action'] == 'download':
-    sub = Download(params["link"], params["lang"], params["ext"])
+    sub = Download(params["link"], params["lang"])
     listitem = xbmcgui.ListItem(label=sub.encode('utf-8'))
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=sub,listitem=listitem,isFolder=False)
 
