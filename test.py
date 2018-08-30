@@ -9,7 +9,7 @@ import urllib
 import urllib2
 
 import zipfile
-
+from unrar import rarfile
 
 # import requests
 import shutil
@@ -50,6 +50,24 @@ def getFileList(path):
             fileslist.append(path+d)
     return fileslist
 
+#解压缩Zip到指定文件夹
+def extractZip(zfile, path):
+    z = ZFile(zfile)
+    z.extract_to(path)
+    z.close()
+
+#解压缩rar到指定文件夹
+def extractRar(zfile, path):
+    rar_command1 = "WinRAR.exe x -ibck %s %s" % (zfile, path)
+    rar_command2 = r'"C:\WinRAR.exe" x -ibck %s %s' % (zfile, path)
+    if os.system(rar_command1) == 0:
+        print "Path OK."
+    else:
+        if os.system(rar_command2) != 0:
+            print "Error."
+        else:
+            print "Exe OK"
+
 def unZip(filepath):
     path  = __temp__ + '/subtitles/'
     if os.path.isdir(path): shutil.rmtree(path)
@@ -68,7 +86,7 @@ def unZip(filepath):
                 zip_file.extract(names,path)
         return getFileList(path)
     if filepath.lower().endswith('rar'):
-        zip_file = zipfile.ZipFile(filepath,'r')
+        zip_file = rarfile.RarFile(filepath,'r')
         for names in zip_file.namelist():
             if type(names) == str and names[-1] != '/':
                 utf8name = names.decode('gbk')
@@ -221,11 +239,11 @@ def Download(url):
     return subtitle_list
 
 
-# unZip()
+unZip('subtitles.rar')
 # url = Search()
 # print(url)
 # Download(url[0]['link'])
-Download('http://www.zimuku.cn/detail/71607.html')
+# Download('http://www.zimuku.cn/detail/71607.html')
 
 # print os.path.join( __temp__, 'temp')
 

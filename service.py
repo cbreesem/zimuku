@@ -7,6 +7,7 @@ import xbmc
 import urllib
 import urllib2
 import zipfile
+import platform
 import shutil
 import xbmcvfs
 import xbmcaddon
@@ -53,19 +54,32 @@ def getFileList(path):
             fileslist.append(path+d)
     return fileslist
 
-def unZip(filepath):
+def extractCompress(file):
+    path  = __temp__ + '/subtitles/'
+    if os.path.isdir(path): shutil.rmtree(path)
+    if not os.path.isdir(path): os.mkdir(path)
 
-    zip_file = zipfile.ZipFile(filepath,'r')
-    for names in zip_file.namelist():
-        if type(names) == str and names[-1] != '/':
-            utf8name = names.decode('gbk')
-            data = zip_file.read(names)
-            fo = open(os.path.join(__temp__, utf8name), "w")
-            fo.write(data)
-            fo.close()
-        else:
-            zip_file.extract(names,__temp__)
-    return getFileList(__temp__+'/')
+    if file.lower().endswith('zip'):
+        zipFile = zipfile.ZipFile(file,'r')
+        for names in zipFile.namelist():
+            if type(names) == str and names[-1] != '/':
+                utf8name = names.decode('gbk')
+                data = zipFile.read(names)
+                with open(path+utf8name, 'wb') as f: f.write(data)
+            else:
+                zipFile.extract(names,path)
+        return getFileList(path)
+
+    if file.lower().endswith('rar'):
+        if platform.system() == 'Windows':
+            rarPath = 'C:\Program Files\WinRAR'
+            sysPath = os.getenv('Path')
+            if 'winrar' not in sysPath.lower(): os.environ["Path"] = sysPath+';'+rarPath
+            command = "winrar x -ibck %s %s" % (file, path)
+        if platform.system() == 'Linux':
+            command = 'unrar x %s %s' % (file, path)
+        res = os.system(command)
+        if res == 0: return getFileList(path)
 
 def Search( item ):
     subtitles_list = []
@@ -160,8 +174,7 @@ def Download(url,lang):
     with open(tempfile, "wb") as subFile: subFile.write(data)
     xbmc.sleep(100)
     if fileName.split('.')[-1].lower() in ('zip','rar'):
-        xbmc.executebuiltin(('XBMC.Extract("%s","%s")' % (tempfile,__temp__,)).encode('utf-8'), True)
-        lists = getFileList(__temp__+'/subtitles/')
+        lists = extractCompress(tempfile)
     else:
         lists = [tempfile]
 
